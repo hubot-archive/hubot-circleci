@@ -17,4 +17,4 @@ HUBOT_CIRCLECI_TOKEN
 You can add an API token at https://circleci.com/account/api
 
 ## Author
-[@dylanlingelbach]: https://github.com/dylanlingelbach/
+[dylanlingelbach](https://github.com/dylanlingelbach/)
