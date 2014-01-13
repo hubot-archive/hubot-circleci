@@ -12,6 +12,9 @@
 #   hubot circle clear <user>/<repo> - Clears the cache for the specified repo
 #
 # Configuration:
+#   HUBOT_CIRCLECI_TOKEN
+#
+# Notes:
 #   Set HUBOT_CIRCLECI_TOKEN with a valid API Token from CircleCI.
 #   You can add an API token at https://circleci.com/account/api
 #
