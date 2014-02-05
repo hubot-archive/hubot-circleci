@@ -144,7 +144,7 @@ module.exports = (robot) ->
        received: true #some client have problems with an empty response
     }
 
-    user = {}
+    user = robot.brain.userForId 'broadcast'
     user.room = query.room if query.room
     user.type = query.type if query.type
 
