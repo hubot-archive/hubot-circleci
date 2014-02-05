@@ -153,8 +153,8 @@ module.exports = (robot) ->
     try
       robot.send user, formatBuildStatus(req.body.payload)
 
-      console.log "Send CircleCI build status message"
-      
+      console.log "Sent CircleCI build status message"
+
     catch error
       console.log "circle hook error: #{error}. Payload: #{util.inspect(req.body.payload)}"
 
