@@ -4,7 +4,11 @@ hubot-circleci
 Hubot CircleCI integration - get status and control CircleCI from hubot
 
 ## Config
+### Required
 HUBOT_CIRCLECI_TOKEN
+
+### Optional
+HUBOT_GITHUB_ORG
 
 ## Commands
 - `hubot circle me <user>/<repo> [branch]`  - Returns the build status of [https://circleci.com/user/repo](https://circleci.com/)

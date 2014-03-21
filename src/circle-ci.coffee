@@ -30,6 +30,12 @@ querystring = require('querystring')
 
 endpoint = 'https://circleci.com/api/v1'
 
+toProject = (project) ->
+  if project.indexOf("/") == -1 && process.env.HUBOT_GITHUB_ORG?
+    return "#{process.env.HUBOT_GITHUB_ORG}/#{project}"
+  else
+    return project
+
 toSha = (vcs_revision) ->
   vcs_revision.substring(0,7)
 
@@ -70,7 +76,7 @@ module.exports = (robot) ->
   robot.respond /circle me (\S*)\s*(\S*)/i, (msg) ->
     unless checkToken(msg)
       return
-    project = escape(msg.match[1])
+    project = escape(toProject(msg.match[1]))
     branch = if msg.match[2] then escape(msg.match[2]) else 'master'
     msg.http("#{endpoint}/project/#{project}/tree/#{branch}?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
       .headers("Accept": "application/json")
@@ -84,7 +90,7 @@ module.exports = (robot) ->
   robot.respond /circle last (\S*)\s*(\S*)/i, (msg) ->
     unless checkToken(msg)
       return
-    project = escape(msg.match[1])
+    project = escape(toProject(msg.match[1]))
     branch = if msg.match[2] then escape(msg.match[2]) else 'master'
     msg.http("#{endpoint}/project/#{project}/tree/#{branch}?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
       .headers("Accept": "application/json")
@@ -103,7 +109,7 @@ module.exports = (robot) ->
   robot.respond /circle retry (.*) (.*)/i, (msg) ->
     unless checkToken(msg)
       return
-    project = escape(msg.match[1])
+    project = escape(toProject(msg.match[1]))
     
     unless msg.match[2]?
       msg.send "I can't retry without a build number"
@@ -117,7 +123,7 @@ module.exports = (robot) ->
   robot.respond /circle cancel (.*) (.*)/i, (msg) ->
     unless checkToken(msg)
       return
-    project = escape(msg.match[1])
+    project = escape(toProject(msg.match[1]))
     unless msg.match[2]?
       msg.send "I can't cancel without a build number"
       return
@@ -130,7 +136,7 @@ module.exports = (robot) ->
   robot.respond /circle clear (.*)/i, (msg) ->
     unless checkToken(msg)
       return
-    project = escape(msg.match[1])
+    project = escape(toProject(msg.match[1]))
     msg.http("#{endpoint}/project/#{project}/build-cache?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
       .headers("Accept": "application/json")
       .del('{}') handleResponse msg, (response) ->
