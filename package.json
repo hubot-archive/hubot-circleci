@@ -1,7 +1,7 @@
 {
   "name": "hubot-circleci",
   "description": "Hubot CircleCI integration",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "author": "Dylan Lingelbach (https://github.com/dylanlingelbach)",
   "license": "MIT",
 
@@ -14,11 +14,11 @@
 
   "repository": {
     "type": "git",
-    "url": "git://github.com/markitx/hubot-circleci.git"
+    "url": "git://github.com/hubot-scripts/hubot-circleci.git"
   },
 
   "bugs": {
-    "url": "https://github.com/markitx/hubot-circleci/issues"
+    "url": "https://github.com/hubot-scripts/hubot-circleci/issues"
   },
 
   "dependencies": {
