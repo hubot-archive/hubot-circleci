@@ -110,11 +110,15 @@ module.exports = (robot) ->
     unless checkToken(msg)
       return
     project = escape(toProject(msg.match[1]))
-    
-    unless msg.match[2]?
-      msg.send "I can't retry without a build number"
-      return
     build_num = escape(msg.match[2])
+    if build_num is 'last'
+      branch = 'master'
+      msg.send "#{endpoint}/project/#{project}/tree/#{branch}?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}"
+      msg.http("#{endpoint}/project/#{project}/tree/#{branch}?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+        .headers("Accept": "application/json")
+        .get() handleResponse msg, (response) ->
+            last = response[0]
+            build_num = last.build_num
     msg.http("#{endpoint}/project/#{project}/#{build_num}/retry?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
       .headers("Accept": "application/json")
       .post('{}') handleResponse msg, (response) ->
@@ -163,4 +167,3 @@ module.exports = (robot) ->
 
     catch error
       console.log "circle hook error: #{error}. Payload: #{util.inspect(req.body.payload)}"
-
