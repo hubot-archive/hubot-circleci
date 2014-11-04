@@ -45,6 +45,12 @@ toDisplay = (status) ->
 formatBuildStatus = (build) ->
   "#{toDisplay(build.status)} in build #{build.build_num} of #{build.vcs_url} [#{build.branch}/#{toSha(build.vcs_revision)}] #{build.committer_name}: #{build.subject} - #{build.why}"
 
+retryBuild = (msg, endpoint, project, build_num) ->
+    msg.http("#{endpoint}/project/#{project}/#{build_num}/retry?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+      .headers("Accept": "application/json")
+      .post('{}') handleResponse msg, (response) ->
+          msg.send "Retrying build #{build_num} of #{project} [#{response.branch}] with build #{response.build_num}"
+
 checkToken = (msg) ->
   unless process.env.HUBOT_CIRCLECI_TOKEN?
     msg.send 'You need to set HUBOT_CIRCLECI_TOKEN to a valid CircleCI API token'
@@ -110,15 +116,17 @@ module.exports = (robot) ->
     unless checkToken(msg)
       return
     project = escape(toProject(msg.match[1]))
-    
-    unless msg.match[2]?
-      msg.send "I can't retry without a build number"
-      return
     build_num = escape(msg.match[2])
-    msg.http("#{endpoint}/project/#{project}/#{build_num}/retry?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
-      .headers("Accept": "application/json")
-      .post('{}') handleResponse msg, (response) ->
-          msg.send "Retrying build #{build_num} of #{project} [#{response.branch}] with build #{response.build_num}"
+    if build_num is 'last'
+      branch = 'master'
+      msg.http("#{endpoint}/project/#{project}/tree/#{branch}?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+        .headers("Accept": "application/json")
+        .get() handleResponse msg, (response) ->
+            last = response[0]
+            build_num = last.build_num
+            retryBuild(msg, endpoint, project, build_num)
+    else
+      retryBuild(msg, endpoint, project, build_num)
 
   robot.respond /circle cancel (.*) (.*)/i, (msg) ->
     unless checkToken(msg)
@@ -163,4 +171,3 @@ module.exports = (robot) ->
 
     catch error
       console.log "circle hook error: #{error}. Payload: #{util.inspect(req.body.payload)}"
-
