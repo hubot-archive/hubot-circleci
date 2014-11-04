@@ -45,6 +45,12 @@ toDisplay = (status) ->
 formatBuildStatus = (build) ->
   "#{toDisplay(build.status)} in build #{build.build_num} of #{build.vcs_url} [#{build.branch}/#{toSha(build.vcs_revision)}] #{build.committer_name}: #{build.subject} - #{build.why}"
 
+retryBuild = (endpoint, project, build_num) ->
+    msg.http("#{endpoint}/project/#{project}/#{build_num}/retry?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+      .headers("Accept": "application/json")
+      .post('{}') handleResponse msg, (response) ->
+          msg.send "Retrying build #{build_num} of #{project} [#{response.branch}] with build #{response.build_num}"
+
 checkToken = (msg) ->
   unless process.env.HUBOT_CIRCLECI_TOKEN?
     msg.send 'You need to set HUBOT_CIRCLECI_TOKEN to a valid CircleCI API token'
@@ -113,16 +119,14 @@ module.exports = (robot) ->
     build_num = escape(msg.match[2])
     if build_num is 'last'
       branch = 'master'
-      msg.send "#{endpoint}/project/#{project}/tree/#{branch}?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}"
       msg.http("#{endpoint}/project/#{project}/tree/#{branch}?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
         .headers("Accept": "application/json")
         .get() handleResponse msg, (response) ->
             last = response[0]
             build_num = last.build_num
-    msg.http("#{endpoint}/project/#{project}/#{build_num}/retry?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
-      .headers("Accept": "application/json")
-      .post('{}') handleResponse msg, (response) ->
-          msg.send "Retrying build #{build_num} of #{project} [#{response.branch}] with build #{response.build_num}"
+            retryBuild(endpoint, project, build_num)
+    else
+      retryBuild(endpoint, project, build_num)
 
   robot.respond /circle cancel (.*) (.*)/i, (msg) ->
     unless checkToken(msg)
