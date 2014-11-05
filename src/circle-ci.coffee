@@ -10,9 +10,11 @@
 #   hubot circle retry <user>/<repo> <build_num> - Retries the build
 #   hubot circle cancel <user>/<repo> <build_num> - Cancels the build
 #   hubot circle clear <user>/<repo> - Clears the cache for the specified repo
+#   hubot circle list <failed>/<success> - Lists all failed/success builds for a given project.
 #
 # Configuration:
 #   HUBOT_CIRCLECI_TOKEN
+#   HUBOT_GITHUB_ORG (optional)
 #
 # Notes:
 #   Set HUBOT_CIRCLECI_TOKEN with a valid API Token from CircleCI.
@@ -44,6 +46,12 @@ toDisplay = (status) ->
 
 formatBuildStatus = (build) ->
   "#{toDisplay(build.status)} in build #{build.build_num} of #{build.vcs_url} [#{build.branch}/#{toSha(build.vcs_revision)}] #{build.committer_name}: #{build.subject} - #{build.why}"
+
+retryBuild = (msg, endpoint, project, build_num) ->
+    msg.http("#{endpoint}/project/#{project}/#{build_num}/retry?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+      .headers("Accept": "application/json")
+      .post('{}') handleResponse msg, (response) ->
+          msg.send "Retrying build #{build_num} of #{project} [#{response.branch}] with build #{response.build_num}"
 
 checkToken = (msg) ->
   unless process.env.HUBOT_CIRCLECI_TOKEN?
@@ -110,15 +118,36 @@ module.exports = (robot) ->
     unless checkToken(msg)
       return
     project = escape(toProject(msg.match[1]))
-    
-    unless msg.match[2]?
-      msg.send "I can't retry without a build number"
-      return
     build_num = escape(msg.match[2])
-    msg.http("#{endpoint}/project/#{project}/#{build_num}/retry?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+    if build_num is 'last'
+      branch = 'master'
+      msg.http("#{endpoint}/project/#{project}/tree/#{branch}?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+        .headers("Accept": "application/json")
+        .get() handleResponse msg, (response) ->
+            last = response[0]
+            build_num = last.build_num
+            retryBuild(msg, endpoint, project, build_num)
+    else
+      retryBuild(msg, endpoint, project, build_num)
+
+  robot.respond /circle list (.*)/i, (msg) ->
+    unless checkToken(msg)
+      return
+    status = escape(msg.match[1])
+    unless status in ['failed', 'success']
+      msg.send "Status can only be failed or success."
+      return
+    msg.http("#{endpoint}/projects?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
       .headers("Accept": "application/json")
-      .post('{}') handleResponse msg, (response) ->
-          msg.send "Retrying build #{build_num} of #{project} [#{response.branch}] with build #{response.build_num}"
+      .get() handleResponse msg, (response) ->
+          msg.send "Projects where the last build's status is #{status}:"
+          for project in response
+            default_branch = project.default_branch
+            build_branch = project.branches[default_branch]
+            recent_builds = build_branch.recent_builds
+            build = recent_builds[0]
+            if build.status is status
+              msg.send "#{toDisplay(build.status)} in build https://circleci.com/gh/#{project.username}/#{project.reponame}/#{build.build_num} of #{project.vcs_url} [#{default_branch}/#{toSha(build.vcs_revision)}]"
 
   robot.respond /circle cancel (.*) (.*)/i, (msg) ->
     unless checkToken(msg)
@@ -163,4 +192,3 @@ module.exports = (robot) ->
 
     catch error
       console.log "circle hook error: #{error}. Payload: #{util.inspect(req.body.payload)}"
-
