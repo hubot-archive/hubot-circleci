@@ -10,9 +10,11 @@
 #   hubot circle retry <user>/<repo> <build_num> - Retries the build
 #   hubot circle cancel <user>/<repo> <build_num> - Cancels the build
 #   hubot circle clear <user>/<repo> - Clears the cache for the specified repo
+#   hubot circle list <failed>/<success> - Lists all failed/success builds for a given project.
 #
 # Configuration:
 #   HUBOT_CIRCLECI_TOKEN
+#   HUBOT_GITHUB_ORG (optional)
 #
 # Notes:
 #   Set HUBOT_CIRCLECI_TOKEN with a valid API Token from CircleCI.
@@ -127,6 +129,25 @@ module.exports = (robot) ->
             retryBuild(msg, endpoint, project, build_num)
     else
       retryBuild(msg, endpoint, project, build_num)
+
+  robot.respond /circle list (.*)/i, (msg) ->
+    unless checkToken(msg)
+      return
+    status = escape(msg.match[1])
+    unless status in ['failed', 'success']
+      msg.send "Status can only be failed or success."
+      return
+    msg.http("#{endpoint}/projects?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+      .headers("Accept": "application/json")
+      .get() handleResponse msg, (response) ->
+          msg.send "Projects where the last build's status is #{status}:"
+          for project in response
+            default_branch = project.default_branch
+            build_branch = project.branches[default_branch]
+            recent_builds = build_branch.recent_builds
+            build = recent_builds[0]
+            if build.status is status
+              msg.send "#{toDisplay(build.status)} in build https://circleci.com/gh/#{project.username}/#{project.reponame}/#{build.build_num} of #{project.vcs_url} [#{default_branch}/#{toSha(build.vcs_revision)}]"
 
   robot.respond /circle cancel (.*) (.*)/i, (msg) ->
     unless checkToken(msg)
