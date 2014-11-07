@@ -147,7 +147,7 @@ module.exports = (robot) ->
             recent_builds = build_branch.recent_builds
             build = recent_builds[0]
             if build.status is status
-              msg.send "#{toDisplay(build.status)} in build https://circleci.com/gh/#{project.username}/#{project.reponame}/#{build.build_num} of #{project.vcs_url} [#{default_branch}/#{toSha(build.vcs_revision)}]"
+              msg.send "#{toDisplay(build.status)} in build https://circleci.com/gh/#{project.username}/#{project.reponame}/#{build.build_num} of #{project.vcs_url} [#{default_branch}]"
 
   robot.respond /circle cancel (.*) (.*)/i, (msg) ->
     unless checkToken(msg)
