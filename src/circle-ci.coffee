@@ -8,6 +8,7 @@
 #   hubot circle me <user>/<repo> [branch] - Returns the build status of https://circleci.com/<user>/<repo>
 #   hubot circle last <user>/<repo> [branch] - Returns the build status of the last complete build of https://circleci.com/<user>/<repo>
 #   hubot circle retry <user>/<repo> <build_num> - Retries the build
+#   hubot circle retry all <failed>/<success> - Retries all builds matching the provided status
 #   hubot circle cancel <user>/<repo> <build_num> - Cancels the build
 #   hubot circle clear <user>/<repo> - Clears the cache for the specified repo
 #   hubot circle list <failed>/<success> - Lists all failed/success builds for a given project.
@@ -52,6 +53,38 @@ retryBuild = (msg, endpoint, project, build_num) ->
       .headers("Accept": "application/json")
       .post('{}') handleResponse msg, (response) ->
           msg.send "Retrying build #{build_num} of #{project} [#{response.branch}] with build #{response.build_num}"
+
+getProjectsByStatus = (msg, endpoint, status, action) ->
+    projects = []
+    msg.http("#{endpoint}/projects?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+      .headers("Accept": "application/json")
+      .get() handleResponse msg, (response) ->
+        for project in response
+          build_branch = project.branches[project.default_branch]
+          last_build = build_branch.recent_builds[0]
+          if last_build.status is status
+            projects.push project
+        if action is 'list'
+          listProjectsByStatus(msg, projects, status)
+        else if action is 'retry'
+          retryProjectsByStatus(msg, projects, status)
+
+retryProjectsByStatus = (msg, projects, status) ->
+    for project in projects
+      build_branch = project.branches[project.default_branch]
+      last_build = build_branch.recent_builds[0]
+      project = toProject(project.reponame)
+      retryBuild(msg, endpoint, project, last_build.build_num)
+
+listProjectsByStatus = (msg, projects, status) ->
+    if projects.length is 0
+      msg.send "No projects match status #{status}"
+    else
+      msg.send "Projects where the last build's status is #{status}:"
+      for project in projects
+        build_branch = project.branches[project.default_branch]
+        last_build = build_branch.recent_builds[0]
+        msg.send "#{toDisplay(last_build.status)} in build https://circleci.com/gh/#{project.username}/#{project.reponame}/#{last_build.build_num} of #{project.vcs_url} [#{project.default_branch}]"
 
 checkToken = (msg) ->
   unless process.env.HUBOT_CIRCLECI_TOKEN?
@@ -117,7 +150,12 @@ module.exports = (robot) ->
   robot.respond /circle retry (.*) (.*)/i, (msg) ->
     unless checkToken(msg)
       return
-    project = escape(toProject(msg.match[1]))
+    if msg.match[1] is 'all'
+      status = escape(msg.match[2])
+      getProjectsByStatus(msg, endpoint, status, 'retry')
+      return
+    else
+      project = escape(toProject(msg.match[1]))
     build_num = escape(msg.match[2])
     if build_num is 'last'
       branch = 'master'
@@ -137,17 +175,7 @@ module.exports = (robot) ->
     unless status in ['failed', 'success']
       msg.send "Status can only be failed or success."
       return
-    msg.http("#{endpoint}/projects?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
-      .headers("Accept": "application/json")
-      .get() handleResponse msg, (response) ->
-          msg.send "Projects where the last build's status is #{status}:"
-          for project in response
-            default_branch = project.default_branch
-            build_branch = project.branches[default_branch]
-            recent_builds = build_branch.recent_builds
-            build = recent_builds[0]
-            if build.status is status
-              msg.send "#{toDisplay(build.status)} in build https://circleci.com/gh/#{project.username}/#{project.reponame}/#{build.build_num} of #{project.vcs_url} [#{default_branch}]"
+    getProjectsByStatus(msg, endpoint, status, 'list')
 
   robot.respond /circle cancel (.*) (.*)/i, (msg) ->
     unless checkToken(msg)
