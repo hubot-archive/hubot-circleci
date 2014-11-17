@@ -62,7 +62,7 @@ getProjectsByStatus = (msg, endpoint, status, action) ->
         for project in response
           build_branch = project.branches[project.default_branch]
           last_build = build_branch.recent_builds[0]
-          if last_build.status is status
+          if last_build.outcome is status
             projects.push project
         if action is 'list'
           listProjectsByStatus(msg, projects, status)
@@ -84,7 +84,7 @@ listProjectsByStatus = (msg, projects, status) ->
       for project in projects
         build_branch = project.branches[project.default_branch]
         last_build = build_branch.recent_builds[0]
-        msg.send "#{toDisplay(last_build.status)} in build https://circleci.com/gh/#{project.username}/#{project.reponame}/#{last_build.build_num} of #{project.vcs_url} [#{project.default_branch}]"
+        msg.send "#{toDisplay(last_build.outcome)} in build https://circleci.com/gh/#{project.username}/#{project.reponame}/#{last_build.build_num} of #{project.vcs_url} [#{project.default_branch}]"
 
 checkToken = (msg) ->
   unless process.env.HUBOT_CIRCLECI_TOKEN?
