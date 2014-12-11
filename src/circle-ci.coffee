@@ -11,6 +11,7 @@
 #   hubot circle retry all <failed>/<success> - Retries all builds matching the provided status
 #   hubot circle cancel <user>/<repo> <build_num> - Cancels the build
 #   hubot circle clear <user>/<repo> - Clears the cache for the specified repo
+#   hubot circle clear all - Clears the cache for the github organization set using HUBOT_GITHUB_ORG
 #   hubot circle list <failed>/<success> - Lists all failed/success builds for a given project.
 #
 # Configuration:
@@ -85,6 +86,12 @@ listProjectsByStatus = (msg, projects, status) ->
         build_branch = project.branches[project.default_branch]
         last_build = build_branch.recent_builds[0]
         msg.send "#{toDisplay(last_build.outcome)} in build https://circleci.com/gh/#{project.username}/#{project.reponame}/#{last_build.build_num} of #{project.vcs_url} [#{project.default_branch}]"
+
+clearProjectCache = (msg, endpoint, project) ->
+    msg.http("#{endpoint}/project/#{project}/build-cache?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+      .headers("Accept": "application/json")
+      .del('{}') handleResponse msg, (response) ->
+          msg.send "Cleared build cache for #{project}"
 
 checkToken = (msg) ->
   unless process.env.HUBOT_CIRCLECI_TOKEN?
@@ -194,10 +201,7 @@ module.exports = (robot) ->
     unless checkToken(msg)
       return
     project = escape(toProject(msg.match[1]))
-    msg.http("#{endpoint}/project/#{project}/build-cache?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
-      .headers("Accept": "application/json")
-      .del('{}') handleResponse msg, (response) ->
-          msg.send "Cleared build cache for #{project}"
+    clearProjectCache(msg, endpoint, project)
 
   robot.router.post "/hubot/circle", (req, res) ->
     console.log "Received circle webhook callback"
