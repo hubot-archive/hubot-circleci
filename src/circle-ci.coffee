@@ -93,6 +93,13 @@ clearProjectCache = (msg, endpoint, project) ->
       .del('{}') handleResponse msg, (response) ->
           msg.send "Cleared build cache for #{project}"
 
+clearAllProjectsCache = (msg, endpoint) ->
+    msg.http("#{endpoint}/projects?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+      .headers("Accept": "application/json")
+      .get() handleResponse msg, (response) ->
+        for project in response
+          clearProjectCache(msg, endpoint, project.reponame)
+
 checkToken = (msg) ->
   unless process.env.HUBOT_CIRCLECI_TOKEN?
     msg.send 'You need to set HUBOT_CIRCLECI_TOKEN to a valid CircleCI API token'
@@ -200,8 +207,11 @@ module.exports = (robot) ->
   robot.respond /circle clear (.*)/i, (msg) ->
     unless checkToken(msg)
       return
-    project = escape(toProject(msg.match[1]))
-    clearProjectCache(msg, endpoint, project)
+    if msg.match[1] is 'all'
+      clearAllProjectsCache(msg, endpoint)
+    else
+      project = escape(toProject(msg.match[1]))
+      clearProjectCache(msg, endpoint, project)
 
   robot.router.post "/hubot/circle", (req, res) ->
     console.log "Received circle webhook callback"
