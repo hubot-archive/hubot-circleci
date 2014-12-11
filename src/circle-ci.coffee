@@ -98,7 +98,8 @@ clearAllProjectsCache = (msg, endpoint) ->
       .headers("Accept": "application/json")
       .get() handleResponse msg, (response) ->
         for project in response
-          clearProjectCache(msg, endpoint, project.reponame)
+          projectname = escape(toProject(project.reponame))
+          clearProjectCache(msg, endpoint, projectname)
 
 checkToken = (msg) ->
   unless process.env.HUBOT_CIRCLECI_TOKEN?
