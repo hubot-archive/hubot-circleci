@@ -81,11 +81,15 @@ listProjectsByStatus = (msg, projects, status) ->
     if projects.length is 0
       msg.send "No projects match status #{status}"
     else
-      msg.send "Projects where the last build's status is #{status}:"
+      message = "Projects where the last build's status is #{status}:\n"
       for project in projects
         build_branch = project.branches[project.default_branch]
         last_build = build_branch.recent_builds[0]
-        msg.send "#{toDisplay(last_build.outcome)} in build https://circleci.com/gh/#{project.username}/#{project.reponame}/#{last_build.build_num} of #{project.vcs_url} [#{project.default_branch}]"
+        message = message + "#{toDisplay(last_build.outcome)} in build https://circleci.com/gh/#{project.username}/#{project.reponame}/#{last_build.build_num} of #{project.vcs_url} [#{project.default_branch}]\n"
+      sendBulkMessage(msg, message)
+
+sendBulkMessage = (msg, message) ->
+    msg.send "#{message}"
 
 clearProjectCache = (msg, endpoint, project) ->
     msg.http("#{endpoint}/project/#{project}/build-cache?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
