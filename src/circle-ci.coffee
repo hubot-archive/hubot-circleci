@@ -132,7 +132,7 @@ handleResponse = (msg, handler) ->
         msg.send "Hmm.  I don't know how to process that CircleCI response: #{res.statusCode}", body
 
 module.exports = (robot) ->
-  
+
   robot.respond /circle me (\S*)\s*(\S*)/i, (msg) ->
     unless checkToken(msg)
       return
