@@ -8,6 +8,7 @@ Hubot CircleCI integration - get status and control CircleCI from hubot
 | -------- | ----------- |
 | `HUBOT_CIRCLECI_TOKEN` | (Required) CircleCI API Token (can be added [here](https://circleci.com/account/api)) |
 | `HUBOT_GITHUB_ORG`     | (Optional) Sets a default GitHUb organization so you can specify a repo without the preceeding organization name |
+| `HUBOT_CIRCLECI_HOST`  | (Optional) CircleCI host (default is circleci.com). If use CircleCI enterprise, be able to override by this value.  |
 
 ## Commands
 - `hubot circle me <user>/<repo> [branch]`  - Returns the build status of [https://circleci.com/user/repo](https://circleci.com/), defaults to master
