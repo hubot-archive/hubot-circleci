@@ -17,6 +17,7 @@
 # Configuration:
 #   HUBOT_CIRCLECI_TOKEN
 #   HUBOT_GITHUB_ORG (optional)
+#   HUBOT_CIRCLECI_HOST (optional. "circleci.com" is default.)
 #
 # Notes:
 #   Set HUBOT_CIRCLECI_TOKEN with a valid API Token from CircleCI.
@@ -32,7 +33,8 @@ url = require('url')
 util = require('util')
 querystring = require('querystring')
 
-endpoint = 'https://circleci.com/api/v1'
+circleciHost = `process.env.HUBOT_CIRCLECI_HOST? process.env.HUBOT_CIRCLECI_HOST : "circleci.com"`
+endpoint = "https://#{circleciHost}/api/v1"
 
 toProject = (project) ->
   if project.indexOf("/") == -1 && process.env.HUBOT_GITHUB_ORG?
