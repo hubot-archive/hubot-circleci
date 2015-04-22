@@ -1,7 +1,7 @@
 {
   "name": "hubot-circleci",
   "description": "Hubot CircleCI integration",
-  "version": "0.7.2",
+  "version": "0.8.1",
   "author": "Dylan Lingelbach (https://github.com/dylanlingelbach)",
   "license": "MIT",
   "keywords": [
