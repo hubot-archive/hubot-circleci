@@ -18,6 +18,7 @@ Hubot CircleCI integration - get status and control CircleCI from hubot
 - `hubot circle clear <user>/<repo>`  - Clears the cache for the specified repo
 - `hubot circle retry all <failed>/<success>`  - Retries all projects that match either failed or success status. Requires `HUBOT_GITHUB_ORG`
 - `hubot circle clear all`  - Clears the cache for all projects. Requires `HUBOT_GITHUB_ORG`
+- `hubot circle list <failed>/<success>` - Lists all failed/success builds for a given project.
 
 ## Notes
 You can add an API token at https://circleci.com/account/api.
