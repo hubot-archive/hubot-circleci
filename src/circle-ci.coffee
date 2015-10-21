@@ -64,8 +64,8 @@ getProjectsByStatus = (msg, endpoint, status, action) ->
       .get() handleResponse msg, (response) ->
         for project in response
           build_branch = project.branches[project.default_branch]
-          last_build = build_branch.recent_builds[0]
-          if last_build.outcome is status
+          last_build = build_branch.recent_builds?[0]
+          if last_build?.outcome is status
             projects.push project
         if action is 'list'
           listProjectsByStatus(msg, projects, status)
