@@ -8,6 +8,7 @@
 #   hubot circle me <user>/<repo> [branch] - Returns the build status of https://circleci.com/<user>/<repo>
 #   hubot circle last <user>/<repo> [branch] - Returns the build status of the last complete build of https://circleci.com/<user>/<repo>
 #   hubot circle retry <user>/<repo> <build_num> - Retries the build
+#   hubot circle retry <user>/<repo> last (<build_paramters>) - Retries the build, pass build parameters by adding `FOO=BAR BAZ=QUX`
 #   hubot circle retry all <failed>/<success> - Retries all builds matching the provided status
 #   hubot circle cancel <user>/<repo> <build_num> - Cancels the build
 #   hubot circle clear <user>/<repo> - Clears the cache for the specified repo
@@ -124,7 +125,7 @@ handleResponse = (msg, handler) ->
         msg.send 'Not authorized.  Did you set HUBOT_CIRCLECI_TOKEN correctly?'
       when 500
         msg.send 'Yikes!  I turned that circle into a square' # Don't send body since we'll get HTML back from Circle
-      when 200
+      when 200, 201
         response = JSON.parse(body)
         handler response
       else
@@ -165,26 +166,30 @@ module.exports = (robot) ->
             else
               msg.send "Last build status for #{project} [#{branch}]: unknown"
 
-  robot.respond /circle retry (.*) (.*)/i, (msg) ->
-    unless checkToken(msg)
-      return
-    if msg.match[1] is 'all'
-      status = escape(msg.match[2])
-      getProjectsByStatus(msg, endpoint, status, 'retry')
-      return
-    else
-      project = escape(toProject(msg.match[1]))
+  robot.respond /circle retry ([^\s]+) last(?:\s+(.+))?/i, (msg) ->
+    return unless checkToken(msg)
+    project = escape(toProject(msg.match[1]))
+    build_parameters = {}
+    msg.match[2]?.split(/\s+/g).forEach (a) ->
+        a = a.split '='
+        build_parameters[a[0]] = a[1]
+    msg.http("#{endpoint}/project/#{project}/tree/master?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+      .header("Accept", "application/json")
+      .header("Content-Type", "application/json")
+      .post(JSON.stringify {build_parameters}) handleResponse msg, (response) ->
+        build_num = response.build_num
+        msg.send "Retrying build #{build_num} of #{project} [#{response.branch}] with build #{response.build_num}"
+
+  robot.respond /circle retry all (failed|success)/i, (msg) ->
+    return unless checkToken(msg)
+    status = escape(msg.match[2])
+    getProjectsByStatus(msg, endpoint, status, 'retry')
+
+  robot.respond /circle retry (.*) (\d+)/i, (msg) ->
+    return unless checkToken(msg)
+    project = escape(toProject(msg.match[1]))
     build_num = escape(msg.match[2])
-    if build_num is 'last'
-      branch = 'master'
-      msg.http("#{endpoint}/project/#{project}/tree/#{branch}?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
-        .headers("Accept": "application/json")
-        .get() handleResponse msg, (response) ->
-            last = response[0]
-            build_num = last.build_num
-            retryBuild(msg, endpoint, project, build_num)
-    else
-      retryBuild(msg, endpoint, project, build_num)
+    retryBuild(msg, endpoint, project, build_num)
 
   robot.respond /circle list (.*)/i, (msg) ->
     unless checkToken(msg)
