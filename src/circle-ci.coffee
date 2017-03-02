@@ -165,7 +165,7 @@ module.exports = (robot) ->
             else
               msg.send "Last build status for #{project} [#{branch}]: unknown"
 
-  robot.respond /circle retry (.*) (.*)/i, (msg) ->
+  robot.respond /circle retry (.*) #?(.*)/i, (msg) ->
     unless checkToken(msg)
       return
     if msg.match[1] is 'all'
@@ -195,7 +195,7 @@ module.exports = (robot) ->
       return
     getProjectsByStatus(msg, endpoint, status, 'list')
 
-  robot.respond /circle cancel (.*) (.*)/i, (msg) ->
+  robot.respond /circle cancel (.*) #?(.*)/i, (msg) ->
     unless checkToken(msg)
       return
     project = escape(toProject(msg.match[1]))
