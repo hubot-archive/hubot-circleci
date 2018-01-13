@@ -16,6 +16,7 @@
 #
 # Configuration:
 #   HUBOT_CIRCLECI_TOKEN
+#   HUBOT_CIRCLECI_VCS_TYPE
 #   HUBOT_GITHUB_ORG (optional)
 #   HUBOT_CIRCLECI_HOST (optional. "circleci.com" is default.)
 #
@@ -34,7 +35,7 @@ util = require('util')
 querystring = require('querystring')
 
 circleciHost = `process.env.HUBOT_CIRCLECI_HOST? process.env.HUBOT_CIRCLECI_HOST : "circleci.com"`
-endpoint = "https://#{circleciHost}/api/v1"
+endpoint = "https://#{circleciHost}/api/v1.1"
 
 toProject = (project) ->
   if project.indexOf("/") == -1 && process.env.HUBOT_GITHUB_ORG?
@@ -52,7 +53,7 @@ formatBuildStatus = (build) ->
   "#{toDisplay(build.status)} in build #{build.build_num} of #{build.vcs_url} [#{build.branch}/#{toSha(build.vcs_revision)}] #{build.committer_name}: #{build.subject} - #{build.why}"
 
 retryBuild = (msg, endpoint, project, build_num) ->
-    msg.http("#{endpoint}/project/#{project}/#{build_num}/retry?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+    msg.http("#{endpoint}/project/#{process.env.HUBOT_CIRCLECI_VCS_TYPE}/#{project}/#{build_num}/retry?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
       .headers("Accept": "application/json")
       .post('{}') handleResponse msg, (response) ->
           msg.send "Retrying build #{build_num} of #{project} [#{response.branch}] with build #{response.build_num}"
@@ -91,7 +92,7 @@ listProjectsByStatus = (msg, projects, status) ->
       msg.send "#{message}"
 
 clearProjectCache = (msg, endpoint, project) ->
-    msg.http("#{endpoint}/project/#{project}/build-cache?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+    msg.http("#{endpoint}/project/#{process.env.HUBOT_CIRCLECI_VCS_TYPE}/#{project}/build-cache?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
       .headers("Accept": "application/json")
       .del('{}') handleResponse msg, (response) ->
           msg.send "Cleared build cache for #{project}"
@@ -137,7 +138,7 @@ module.exports = (robot) ->
       return
     project = escape(toProject(msg.match[1]))
     branch = if msg.match[2] then escape(msg.match[2]) else 'master'
-    msg.http("#{endpoint}/project/#{project}/tree/#{branch}?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+    msg.http("#{endpoint}/project/#{process.env.HUBOT_CIRCLECI_VCS_TYPE}/#{project}/tree/#{branch}?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
       .headers("Accept": "application/json")
       .get() handleResponse  msg, (response) ->
           if response.length == 0
@@ -151,7 +152,7 @@ module.exports = (robot) ->
       return
     project = escape(toProject(msg.match[1]))
     branch = if msg.match[2] then escape(msg.match[2]) else 'master'
-    msg.http("#{endpoint}/project/#{project}/tree/#{branch}?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+    msg.http("#{endpoint}/project/#{process.env.HUBOT_CIRCLECI_VCS_TYPE}/#{project}/tree/#{branch}?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
       .headers("Accept": "application/json")
       .get() handleResponse msg, (response) ->
           if response.length == 0
@@ -177,7 +178,7 @@ module.exports = (robot) ->
     build_num = escape(msg.match[2])
     if build_num is 'last'
       branch = 'master'
-      msg.http("#{endpoint}/project/#{project}/tree/#{branch}?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+      msg.http("#{endpoint}/project/#{process.env.HUBOT_CIRCLECI_VCS_TYPE}/#{project}/tree/#{branch}?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
         .headers("Accept": "application/json")
         .get() handleResponse msg, (response) ->
             last = response[0]
@@ -203,7 +204,7 @@ module.exports = (robot) ->
       msg.send "I can't cancel without a build number"
       return
     build_num = escape(msg.match[2])
-    msg.http("#{endpoint}/project/#{project}/#{build_num}/cancel?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
+    msg.http("#{endpoint}/project/#{process.env.HUBOT_CIRCLECI_VCS_TYPE}/#{project}/#{build_num}/cancel?circle-token=#{process.env.HUBOT_CIRCLECI_TOKEN}")
       .headers("Accept": "application/json")
       .post('{}') handleResponse msg, (response) ->
           msg.send "Canceled build #{response.build_num} for #{project} [#{response.branch}]"
